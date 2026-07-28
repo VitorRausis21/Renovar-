@@ -22,6 +22,16 @@ const origemOptions = [
   { value: 'Google', label: 'Google' },
 ];
 
+// Valida o telefone pelos digitos (ignora mascara). Aceita 10-13 digitos,
+// ou 14 no padrao "55 DD 9 + 9 digitos" (o "9" extra e normalizado no backend).
+function whatsappError(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return 'Informe o WhatsApp';
+  if (digits.length >= 10 && digits.length <= 13) return null;
+  if (digits.length === 14 && /^55\d{2}9\d{9}$/.test(digits)) return null;
+  return 'Numero de WhatsApp invalido (verifique o DDD e os digitos)';
+}
+
 export default function LeadForm({ isOpen, onClose, onSubmit, lead = null, loading = false }) {
   const [form, setForm] = useState({
     nome: '',
@@ -30,8 +40,10 @@ export default function LeadForm({ isOpen, onClose, onSubmit, lead = null, loadi
     status: 'Novo',
     observacoes: '',
   });
+  const [waError, setWaError] = useState(null);
 
   useEffect(() => {
+    setWaError(null);
     if (lead) {
       setForm({
         nome: lead.nome || '',
@@ -51,6 +63,12 @@ export default function LeadForm({ isOpen, onClose, onSubmit, lead = null, loadi
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const err = whatsappError(form.whatsapp);
+    if (err) {
+      setWaError(err);
+      return;
+    }
+    setWaError(null);
     onSubmit(form);
   };
 
@@ -71,8 +89,12 @@ export default function LeadForm({ isOpen, onClose, onSubmit, lead = null, loadi
         <Input
           label="WhatsApp"
           value={form.whatsapp}
-          onChange={(e) => handleChange('whatsapp', e.target.value)}
+          onChange={(e) => {
+            handleChange('whatsapp', e.target.value);
+            if (waError) setWaError(null);
+          }}
           placeholder="5511999999999"
+          error={waError}
           required
         />
         <div className="grid grid-cols-2 gap-4">
