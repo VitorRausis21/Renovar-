@@ -1,5 +1,6 @@
 const Papa = require('papaparse');
 const XLSX = require('xlsx');
+const { formatPhone, isValidPhone } = require('../utils/formatPhone');
 
 class CsvService {
   static parseCSV(buffer) {
@@ -34,16 +35,20 @@ class CsvService {
 
     rows.forEach((row, index) => {
       const nome = row.nome || row.name || '';
-      const whatsapp = String(row.whatsapp || row.telefone || row.phone || '').replace(/\D/g, '');
+      const whatsappRaw = String(row.whatsapp || row.telefone || row.phone || '').replace(/\D/g, '');
       const observacoes = row.observacoes || row.observacao || row.notes || '';
 
-      if (!nome || !whatsapp) {
+      if (!nome || !whatsappRaw) {
         errors.push({ row: index + 2, reason: 'Nome ou WhatsApp ausente' });
         return;
       }
 
-      if (whatsapp.length < 10 || whatsapp.length > 13) {
-        errors.push({ row: index + 2, reason: `WhatsApp invalido: ${whatsapp}` });
+      // Normaliza (adiciona 55, remove "9" extra) antes de validar/inserir,
+      // para nao gravar numeros que a Evolution rejeitaria com "exists:false".
+      const whatsapp = formatPhone(whatsappRaw);
+
+      if (!isValidPhone(whatsapp)) {
+        errors.push({ row: index + 2, reason: `WhatsApp invalido: ${whatsappRaw}` });
         return;
       }
 

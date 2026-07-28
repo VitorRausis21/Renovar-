@@ -1,8 +1,21 @@
 const { z } = require('zod');
 
+// Valida o whatsapp pelos digitos (ignora mascara: parenteses, espacos, tracos).
+// O usuario pode digitar "(41) 99999-8888" — contam so os digitos.
+// Aceita 10-13 digitos, ou 14 quando for o padrao "55 DD 9 + 9 digitos"
+// (numero com o "9" extra que o formatPhone normaliza depois para 13).
+const whatsappSchema = z
+  .string()
+  .refine((v) => {
+    const digits = (v || '').replace(/\D/g, '');
+    if (digits.length >= 10 && digits.length <= 13) return true;
+    if (digits.length === 14 && /^55\d{2}9\d{9}$/.test(digits)) return true;
+    return false;
+  }, 'WhatsApp invalido');
+
 const leadSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  whatsapp: z.string().min(10, 'WhatsApp invalido').max(13, 'WhatsApp invalido'),
+  whatsapp: whatsappSchema,
   origem: z.string().min(1, 'Origem obrigatoria'),
   observacoes: z.string().optional().nullable(),
   status: z.enum(['Novo', 'Em Contato', 'Respondeu', 'Convertido', 'Perdido']).optional(),
@@ -10,7 +23,7 @@ const leadSchema = z.object({
 
 const leadUpdateSchema = z.object({
   nome: z.string().min(2).optional(),
-  whatsapp: z.string().min(10).max(13).optional(),
+  whatsapp: whatsappSchema.optional(),
   origem: z.string().min(1).optional(),
   observacoes: z.string().optional().nullable(),
   status: z.enum(['Novo', 'Em Contato', 'Respondeu', 'Convertido', 'Perdido']).optional(),
@@ -23,7 +36,7 @@ const loginSchema = z.object({
 
 const publicLeadSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  whatsapp: z.string().min(10, 'WhatsApp invalido').max(13, 'WhatsApp invalido'),
+  whatsapp: whatsappSchema,
   origem: z.string().optional().default('Formulario do site'),
   observacoes: z.string().optional().nullable(),
 });

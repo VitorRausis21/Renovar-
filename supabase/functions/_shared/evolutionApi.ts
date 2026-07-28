@@ -10,9 +10,20 @@ const EVOLUTION_INSTANCE =
 
 export function formatPhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
-  const digits = String(phone).replace(/\D/g, "");
-  if (digits.startsWith("55") && digits.length >= 12) return digits;
-  if (digits.length === 10 || digits.length === 11) return "55" + digits;
+  let digits = String(phone).replace(/\D/g, "");
+
+  // Sem 55 na frente: prefixa (celular 11 dig / fixo 10 dig)
+  if (!digits.startsWith("55") && (digits.length === 10 || digits.length === 11)) {
+    digits = "55" + digits;
+  }
+
+  // Remove o "9" duplicado apos o DDD quando ficou com 14 digitos
+  // (55 DD 9 seguido de mais 9 digitos -> mantem 55 DD + 9 digitos).
+  // Ex: 55419995591338 -> 5541995591338. Espelha backend/src/utils/formatPhone.js.
+  if (digits.length === 14) {
+    digits = digits.replace(/^(55\d{2})9(\d{9})$/, "$1$2");
+  }
+
   return digits;
 }
 
