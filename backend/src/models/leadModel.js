@@ -8,7 +8,16 @@ class LeadModel {
 
     if (status) query = query.eq('status', status);
     if (origem) query = query.eq('origem', origem);
-    if (search) query = query.ilike('nome', `%${search}%`);
+    if (search) {
+      // Busca por nome OU telefone. Para o telefone, usa so os digitos do termo
+      // (ignora mascara: parenteses, espacos, tracos) contra o whatsapp armazenado.
+      const term = String(search).trim();
+      const digits = term.replace(/\D/g, '');
+      const escaped = term.replace(/[%_,]/g, (c) => `\\${c}`);
+      const filters = [`nome.ilike.%${escaped}%`];
+      if (digits) filters.push(`whatsapp.ilike.%${digits}%`);
+      query = query.or(filters.join(','));
+    }
 
     const from = (page - 1) * limit;
     const to = from + limit - 1;
